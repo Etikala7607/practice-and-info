@@ -1,0 +1,47 @@
+#!/bin/bash
+
+apt update -y
+apt install openjdk-8-jdk wget -y > /dev/null
+
+mkdir /tmp/tomcat/
+cd /tmp/tomcat/
+
+wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.75/bin/apache-tomcat-9.0.75.tar.gz
+tar xzvf apache-tomcat-9.0.75.tar.gz
+
+mkdir /usr/local/tomcat9/
+
+useradd --home-dir /usr/local/tomcat9 --shell /sbin/nologin tomcat
+cp -r apache-tomcat-9.0.75/* /usr/local/tomcat9/
+chown -R tomcat.tomcat /usr/local/tomcat9
+
+cat <<EOF | sudo tee /etc/systemd/system/tomcat.service
+[Unit]
+Description=Tomcat
+After=network.target
+
+[Service]
+User=tomcat
+WorkingDirectory=/usr/local/tomcat9
+Environment=JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64/jre
+Environment=CATALINA_PID=/usr/local/tomcat9/temp/tomcat.pid
+Environment=CATALINA_HOME=/usr/local/tomcat9
+Environment=CATALINE_BASE=/usr/local/tomcat9
+
+ExecStart=/usr/local/tomcat9/bin/catalina.sh run
+ExecStop=/usr/local/tomcati9/bin/shutdown.sh
+SyslogIdentifier=tomcat-%i
+
+
+Group=tomcat
+RestartSec=10
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+sudo systemctl daemon-reload	
+sudo systemctl start tomcat
+sudo systemctl enable tomcat
